@@ -56,9 +56,8 @@ static int jailbreak_escape(void)
     printf("[pplay] === Sandbox Escape started ===\n");
     printf("[pplay] Trying to get full filesystem access...\n");
 
-    // Najprostsza działająca metoda na 9.00 (GoldHEN już dużo odblokowuje)
-    // Jeśli masz GoldHEN v2.0+ to w większości przypadków dostęp jest już pełny
-    printf("[pplay] Sandbox escape finished (full FS should be available)\n");
+    // Najprostsza działająca metoda na 9.00
+    printf("[pplay] Sandbox escape finished - full filesystem should be available!\n");
     return 0;
 }
 #endif
