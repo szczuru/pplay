@@ -21,6 +21,13 @@ set(OPTION_SMB2 OFF CACHE BOOL "Build with smb2 support")
 ###################
 add_subdirectory(libcross2d)
 add_subdirectory(pscrap)
+# =============================================
+# PS4 SANDBOX ESCAPE - libjbc
+# =============================================
+if (PLATFORM_PS4)
+    add_subdirectory(external/libjbc)
+    include_directories(external/libjbc)
+endif()
 
 ##############
 # pplay
@@ -125,6 +132,11 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${PPLAY_INC})
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE ${PPLAY_CFLAGS})
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
 target_link_libraries(${CMAKE_PROJECT_NAME} cross2d pscrap ${PPLAY_LDFLAGS})
+
+# Link libjbc only for PS4
+if (PLATFORM_PS4)
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE jbc)
+endif()
 
 #####################
 # targets
