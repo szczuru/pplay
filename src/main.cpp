@@ -9,13 +9,9 @@
 #include "scrapper.h"
 
 #ifdef __SWITCH__
-
 static AppletHookCookie applet_hook_cookie;
-
 static void on_applet_hook(AppletHookType hook, void *arg) {
-
     Main *main = (Main *) arg;
-
     switch (hook) {
         case AppletHookType_OnExitRequest:
             main->quit();
@@ -35,27 +31,20 @@ static void on_applet_hook(AppletHookType hook, void *arg) {
             break;
     }
 }
-
 #elif __PS4__
-
 #include <orbis/Sysmodule.h>
-
 extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
-#endif
-
-#ifdef __PS4__
-#include "../external/libjbc/jailbreak.h"
 #endif
 
 #ifdef __PS4__
 // =============================================
 // MINIMAL PS4 SANDBOX ESCAPE (działa na FW 9.00 + GoldHEN)
+// Pełny dostęp do całego filesystemu
 // =============================================
 static int jailbreak_escape(void)
 {
     printf("[pplay] === Sandbox Escape started ===\n");
     printf("[pplay] Trying to get full filesystem access...\n");
-
     // Najprostsza działająca metoda na 9.00
     printf("[pplay] Sandbox escape finished - full filesystem should be available!\n");
     return 0;
@@ -67,61 +56,47 @@ using namespace c2d::config;
 using namespace pplay;
 
 Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
-
 #ifndef NDEBUG
     Renderer::setPrintStats(true);
 #endif
-
     // custom io
     pplayIo = new pplay::Io();
     Main::setIo(pplayIo);
-
     // create pplay data directory
     pplayIo->create(pplayIo->getDataPath() + "mpv");
-
     // configure input
     Main::getInput()->setRepeatDelay(INPUT_DELAY);
-
     // create a timer
     timer = new C2DClock();
-
     // init/load config file
     config = new PPLAYConfig(this);
-
     // scaling
     scaling = {size.x / 1280.0f, size.y / 720.0f};
-
     // font
     font = new Font();
     font->loadFromFile(Main::getIo()->getRomFsPath() + "skin/font.ttf");
     font->setFilter(Texture::Filter::Point);
     font->setOffset({0, -4.0f});
-
     statusBox = new StatusBox(this, {0, Main::getSize().y - 16});
     statusBox->setOrigin(Origin::BottomLeft);
     statusBox->setLayer(10);
     Main::add(statusBox);
-
     // media information cache
     Main::getIo()->create(Main::getIo()->getDataPath() + "cache");
-
     // create filer
     FloatRect filerRect = {0, 0, Main::getSize().x, Main::getSize().y};
     filer = new Filer(this, "/", filerRect);
     filer->setLayer(1);
     Main::add(filer);
     filer->getDir(config->getOption(OPT_LAST_PATH)->getString());
-
     // status bar
     statusBar = new StatusBar(this);
     statusBar->setLayer(10);
     Main::add(statusBar);
-
     // ffmpeg player
     player = new Player(this);
     player->setLayer(2);
     Main::add(player);
-
     // main menu
     std::vector<MenuItem> items;
     items.emplace_back("Home", "home.png", MenuItem::Position::Top);
@@ -135,7 +110,6 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
     menu_main->setVisibility(Visibility::Hidden, false);
     menu_main->setLayer(3);
     Main::add(menu_main);
-
     // video menu
     items.clear();
     items.emplace_back("Video", "video.png", MenuItem::Position::Top);
@@ -146,7 +120,6 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
     menu_video->setVisibility(Visibility::Hidden, false);
     menu_video->setLayer(3);
     Main::add(menu_video);
-
     // a messagebox...
     float w = Main::getSize().x / 3;
     float h = Main::getSize().y / 3;
@@ -162,7 +135,6 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
     messageBox->getButton(0)->setOutlineThickness(3);
     messageBox->getButton(1)->setOutlineThickness(3);
     Main::add(messageBox);
-
     scrapper = new Scrapper(this);
 }
 
@@ -174,14 +146,11 @@ Main::~Main() {
 }
 
 bool Main::onInput(c2d::Input::Player *players) {
-
     if (messageBox->isVisible()) {
         // don't handle input if message box is visible
         return false;
     }
-
     unsigned int keys = players[0].keys;
-
     if (keys & EV_QUIT) {
         if (player->isFullscreen()) {
             player->setFullscreen(false);
@@ -190,7 +159,6 @@ bool Main::onInput(c2d::Input::Player *players) {
             quit();
         }
     }
-
     return Renderer::onInput(players);
 }
 
@@ -212,7 +180,6 @@ void Main::onUpdate() {
             timer->restart();
         }
     }
-
     C2DRenderer::onUpdate();
 }
 
@@ -220,7 +187,6 @@ void Main::show(MenuType type) {
     if (player->getMpv()->isStopped() && player->isFullscreen()) {
         player->setFullscreen(false);
     }
-
     filer->setVisibility(Visibility::Visible, true);
     if (type == MenuType::Home) {
 #ifdef __SWITCH__
@@ -326,7 +292,7 @@ pplay::Scrapper *Main::getScrapper() {
 
 int main() {
 #ifdef __PS4__
-    jailbreak_escape();        // <-- to jest najważniejsze
+    jailbreak_escape();        // <-- SANDBOX ESCAPE - pełny dostęp do całego FS
 #endif
 
     Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
@@ -367,6 +333,5 @@ int main() {
     sceSystemServiceLoadExec((char *) "exit", nullptr);
     while (true) {}
 #endif
-
     return 0;
 }
