@@ -311,10 +311,7 @@ pplay::Scrapper *Main::getScrapper() {
 
 int main() {
 #ifdef __PS4__
-    // === SANDBOX ESCAPE - pełny dostęp do całego filesystemu ===
-    if (jailbreak_escape() != 0) {
-        // Można dodać komunikat, ale na PS4 lepiej zostawić cicho
-    }
+    jailbreak_escape();
 #endif
 
     Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
