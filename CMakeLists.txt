@@ -21,12 +21,19 @@ set(OPTION_SMB2 OFF CACHE BOOL "Build with smb2 support")
 ###################
 add_subdirectory(libcross2d)
 add_subdirectory(pscrap)
+
 # =============================================
-# PS4 SANDBOX ESCAPE - libjbc
+# PS4 SANDBOX ESCAPE - libjbc (manual integration)
 # =============================================
 if (PLATFORM_PS4)
-    add_subdirectory(external/libjbc)
-    include_directories(external/libjbc)
+    # Dodajemy pliki źródłowe libjbc ręcznie
+    list(APPEND PPLAY_SRC
+        external/libjbc/jailbreak.c
+        external/libjbc/kernelrw.c
+        external/libjbc/utils.c
+    )
+    # Dodajemy ścieżkę do nagłówków
+    list(APPEND PPLAY_INC external/libjbc)
 endif()
 
 ##############
