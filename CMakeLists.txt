@@ -142,11 +142,6 @@ target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-
 # Link libraries
 target_link_libraries(${CMAKE_PROJECT_NAME} cross2d pscrap ${PPLAY_LDFLAGS})
 
-# Link libjbc only for PS4 (bez PRIVATE, żeby pasowało do stylu projektu)
-if (PLATFORM_PS4)
-    target_link_libraries(${CMAKE_PROJECT_NAME} jbc)   # niepotrzebne, ale zostawiamy na wszelki wypadek
-endif()
-
 #####################
 # targets
 #####################
