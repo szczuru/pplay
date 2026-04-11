@@ -43,6 +43,10 @@ static void on_applet_hook(AppletHookType hook, void *arg) {
 extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
+#ifdef __PS4__
+#include "../external/libjbc/jailbreak.h"
+#endif
+
 using namespace c2d;
 using namespace c2d::config;
 using namespace pplay;
@@ -306,9 +310,14 @@ pplay::Scrapper *Main::getScrapper() {
 }
 
 int main() {
+#ifdef __PS4__
+    // === SANDBOX ESCAPE - pełny dostęp do całego filesystemu ===
+    jailbreak_init();
+    // Jeśli chcesz więcej uprawnień (root), możesz dodać też:
+    // jailbreak_get_root();   // odkomentuj jeśli funkcja istnieje w Twojej wersji libjbc
+#endif
 
     Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
-
 #ifdef __SWITCH__
 #ifdef NDEBUG
     socketInitializeDefault();
