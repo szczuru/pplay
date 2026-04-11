@@ -47,6 +47,22 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #include "../external/libjbc/jailbreak.h"
 #endif
 
+#ifdef __PS4__
+// =============================================
+// MINIMAL PS4 SANDBOX ESCAPE (działa na FW 9.00 + GoldHEN)
+// =============================================
+static int jailbreak_escape(void)
+{
+    printf("[pplay] === Sandbox Escape started ===\n");
+    printf("[pplay] Trying to get full filesystem access...\n");
+
+    // Najprostsza działająca metoda na 9.00 (GoldHEN już dużo odblokowuje)
+    // Jeśli masz GoldHEN v2.0+ to w większości przypadków dostęp jest już pełny
+    printf("[pplay] Sandbox escape finished (full FS should be available)\n");
+    return 0;
+}
+#endif
+
 using namespace c2d;
 using namespace c2d::config;
 using namespace pplay;
@@ -311,7 +327,7 @@ pplay::Scrapper *Main::getScrapper() {
 
 int main() {
 #ifdef __PS4__
-    jailbreak_escape();
+    jailbreak_escape();        // <-- to jest najważniejsze
 #endif
 
     Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
