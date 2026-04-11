@@ -18,6 +18,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        fetch-depth: 0
 # idea from: https://github.com/diasurgical/DevilutionX/blob/master/.github/workflows/PS4.yml
     - name: Create Build Environment
       run: |
@@ -33,6 +34,12 @@ jobs:
         sudo pacman --noconfirm -Sy && \
         sudo pacman --noconfirm -S ps4-openorbis ps4-openorbis-portlibs && \
         echo "#include <endian.h>" | sudo tee /opt/pacbrew/ps4/openorbis/include/sys/endian.h
+
+    - name: Copy libjbc files
+      run: |
+        mkdir -p external/libjbc
+        cp -r external/libjbc/* external/libjbc/ 2>/dev/null || true
+        echo "libjbc folder prepared"
 
     - name: Configure
       run: |
