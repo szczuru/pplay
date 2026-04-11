@@ -312,9 +312,9 @@ pplay::Scrapper *Main::getScrapper() {
 int main() {
 #ifdef __PS4__
     // === SANDBOX ESCAPE - pełny dostęp do całego filesystemu ===
-    jailbreak_init();
-    // Jeśli chcesz więcej uprawnień (root), możesz dodać też:
-    // jailbreak_get_root();   // odkomentuj jeśli funkcja istnieje w Twojej wersji libjbc
+    if (jailbreak_escape() != 0) {
+        // Można dodać komunikat, ale na PS4 lepiej zostawić cicho
+    }
 #endif
 
     Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
