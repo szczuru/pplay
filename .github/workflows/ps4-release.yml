@@ -19,7 +19,7 @@ jobs:
       with:
         submodules: recursive
         fetch-depth: 0
-# idea from: https://github.com/diasurgical/DevilutionX/blob/master/.github/workflows/PS4.yml
+
     - name: Create Build Environment
       run: |
         sudo apt-get update && \
@@ -29,39 +29,39 @@ jobs:
         SigLevel = Optional TrustAll
         Server = https://pacman.mydedibox.fr/pacbrew/packages/
         TEXT
+
     - name: Setup pacman packages
       run: |
         sudo pacman --noconfirm -Sy && \
         sudo pacman --noconfirm -S ps4-openorbis ps4-openorbis-portlibs && \
         echo "#include <endian.h>" | sudo tee /opt/pacbrew/ps4/openorbis/include/sys/endian.h
 
-    - name: Copy libjbc files
-      run: |
-        mkdir -p external/libjbc
-        cp -r external/libjbc/* external/libjbc/ 2>/dev/null || true
-        echo "libjbc folder prepared"
-
     - name: Configure
       run: |
-         cd $GITHUB_WORKSPACE
-         cd pscrap
-         echo "123154" >> tmdb.key
-         cd ..
-         
-         # Przygotuj libjbc
-         mkdir -p external/libjbc
-         
-         mkdir cmake-build && cd cmake-build
-         export OPENORBIS=/opt/pacbrew/ps4/openorbis
-         cmake -G "Unix Makefiles" -DPLATFORM_PS4=ON -DCMAKE_BUILD_TYPE=Release ..
+        cd $GITHUB_WORKSPACE
+        cd pscrap
+        echo "123154" >> tmdb.key
+        cd ..
+        mkdir cmake-build && cd cmake-build
+        export OPENORBIS=/opt/pacbrew/ps4/openorbis
+        cmake -G "Unix Makefiles" -DPLATFORM_PS4=ON -DCMAKE_BUILD_TYPE=Release ..
 
     - name: Build pplay
       run: |
-         cd $GITHUB_WORKSPACE/cmake-build
-         make pplay_pkg
-         mv *.pkg $GITHUB_WORKSPACE
+        cd $GITHUB_WORKSPACE/cmake-build
+        make pplay_pkg
+        mv *.pkg $GITHUB_WORKSPACE
 
+    # NOWY KROK - pozwala pobrać .pkg nawet przy ręcznym uruchomieniu
+    - name: Upload PKG artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: pplay-ps4
+        path: '*.pkg'
+
+    # Release tylko przy tagu (działa jak wcześniej)
     - name: Release
+      if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
         files: '*.pkg'
