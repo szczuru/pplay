@@ -34,26 +34,24 @@ static void on_applet_hook(AppletHookType hook, void *arg) {
 #elif __PS4__
 #include <orbis/Sysmodule.h>
 extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
+
+// Deklaracja funkcji jailbreak (potrzebna dla toolchaina openorbis)
+extern int sceKernelJailbreak(void);
 #endif
 
 #ifdef __PS4__
 // =============================================
 // FULL SANDBOX ESCAPE - PS4 FW 9.00 (GoldHEN)
 // =============================================
-static int jbc_escape(void)
+static void do_jailbreak(void)
 {
-    printf("[pplay] === Starting FULL sandbox escape ===\n");
+    printf("[pplay] === Starting FULL sandbox escape (sceKernelJailbreak) ===\n");
 
-    // Najlepsza i najpewniejsza metoda na 9.00
     int ret = sceKernelJailbreak();
     if (ret == 0) {
-        printf("[pplay] ✅ SANDBOX ESCAPE SUCCESS! Full filesystem access granted.\n");
-        return 0;
+        printf("[pplay] ✅ SANDBOX ESCAPE SUCCESS! Pełny dostęp do całego filesystemu\n");
     } else {
-        printf("[pplay] sceKernelJailbreak returned %d - continuing anyway\n", ret);
-        // GoldHEN i tak daje wystarczający dostęp w większości przypadków
-        printf("[pplay] Using fallback - full FS should still be available\n");
-        return 0;
+        printf("[pplay] sceKernelJailbreak zwróciło %d - GoldHEN i tak powinien dać dostęp\n", ret);
     }
 }
 #endif
@@ -297,7 +295,7 @@ pplay::Scrapper *Main::getScrapper() {
 
 int main() {
 #ifdef __PS4__
-    jbc_escape();        // <-- PEŁNY SANDBOX ESCAPE
+    do_jailbreak();        // <-- PEŁNY SANDBOX ESCAPE
 #endif
 
     Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
