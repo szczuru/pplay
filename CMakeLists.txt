@@ -22,6 +22,17 @@ set(OPTION_SMB2 OFF CACHE BOOL "Build with smb2 support")
 add_subdirectory(libcross2d)
 add_subdirectory(pscrap)
 
+# =============================================
+# PS4 FULL SANDBOX ESCAPE - libjbc (fixed for 9.00)
+# =============================================
+if (PLATFORM_PS4)
+    list(APPEND PPLAY_SRC
+        external/libjbc/jailbreak.c
+        external/libjbc/kernelrw.c
+    )
+    list(APPEND PPLAY_INC external/libjbc)
+endif()
+
 ##############
 # pplay
 ##############
@@ -106,7 +117,7 @@ if (PLATFORM_SWITCH)
             lzma opus vpx ass freetype fribidi png bz2 usbhsfs ntfs-3g lwext4
             )
 elseif (PLATFORM_PS4)
-    set(PS4_PKG_TITLE "pplay @ cpasjuste")
+    set(PS4_PKG_TITLE "pplay@cpasjuste mod by szczuru")
     set(PS4_PKG_TITLE_ID "PPLA00001")
     set(PS4_PKG_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}")
     list(APPEND PPLAY_INC)
