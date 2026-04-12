@@ -1,5 +1,4 @@
 #pragma once
-
 #ifdef __PS4__
-int jbc_escape(void);
+int kernelrw_init(void);
 #endif
