@@ -36,20 +36,7 @@ static void on_applet_hook(AppletHookType hook, void *arg) {
 extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
-#ifdef __PS4__
-// =============================================
-// MINIMAL PS4 SANDBOX ESCAPE (działa na FW 9.00 + GoldHEN)
-// Pełny dostęp do całego filesystemu
-// =============================================
-static int jailbreak_escape(void)
-{
-    printf("[pplay] === Sandbox Escape started ===\n");
-    printf("[pplay] Trying to get full filesystem access...\n");
-    // Najprostsza działająca metoda na 9.00
-    printf("[pplay] Sandbox escape finished - full filesystem should be available!\n");
-    return 0;
-}
-#endif
+
 
 using namespace c2d;
 using namespace c2d::config;
@@ -292,7 +279,7 @@ pplay::Scrapper *Main::getScrapper() {
 
 int main() {
 #ifdef __PS4__
-    jailbreak_escape();        // <-- SANDBOX ESCAPE - pełny dostęp do całego FS
+    jbc_escape();        // <-- prawdziwy escape
 #endif
 
     Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
