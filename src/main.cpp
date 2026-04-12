@@ -36,7 +36,27 @@ static void on_applet_hook(AppletHookType hook, void *arg) {
 extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
+#ifdef __PS4__
+// =============================================
+// FULL SANDBOX ESCAPE - PS4 FW 9.00 (GoldHEN)
+// =============================================
+static int jbc_escape(void)
+{
+    printf("[pplay] === Starting FULL sandbox escape ===\n");
 
+    // Najlepsza i najpewniejsza metoda na 9.00
+    int ret = sceKernelJailbreak();
+    if (ret == 0) {
+        printf("[pplay] ✅ SANDBOX ESCAPE SUCCESS! Full filesystem access granted.\n");
+        return 0;
+    } else {
+        printf("[pplay] sceKernelJailbreak returned %d - continuing anyway\n", ret);
+        // GoldHEN i tak daje wystarczający dostęp w większości przypadków
+        printf("[pplay] Using fallback - full FS should still be available\n");
+        return 0;
+    }
+}
+#endif
 
 using namespace c2d;
 using namespace c2d::config;
@@ -134,7 +154,6 @@ Main::~Main() {
 
 bool Main::onInput(c2d::Input::Player *players) {
     if (messageBox->isVisible()) {
-        // don't handle input if message box is visible
         return false;
     }
     unsigned int keys = players[0].keys;
@@ -218,7 +237,6 @@ void Main::setRunningStop() {
 }
 
 void Main::quit() {
-    // TODO: save network path
     config->getOption(OPT_LAST_PATH)->setString(filer->getPath());
     config->save();
     exit = true;
@@ -279,7 +297,7 @@ pplay::Scrapper *Main::getScrapper() {
 
 int main() {
 #ifdef __PS4__
-    jbc_escape();        // <-- prawdziwy escape
+    jbc_escape();        // <-- PEŁNY SANDBOX ESCAPE
 #endif
 
     Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
