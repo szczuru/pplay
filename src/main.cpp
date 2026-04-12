@@ -35,8 +35,8 @@ static void on_applet_hook(AppletHookType hook, void *arg) {
 #include <orbis/Sysmodule.h>
 extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 
-// Deklaracja funkcji jailbreak (potrzebna dla toolchaina openorbis)
-extern int sceKernelJailbreak(void);
+// Weak declaration - nie powoduje błędu linkera na openorbis
+extern "C" int sceKernelJailbreak(void) __attribute__((weak));
 #endif
 
 #ifdef __PS4__
@@ -45,14 +45,20 @@ extern int sceKernelJailbreak(void);
 // =============================================
 static void do_jailbreak(void)
 {
-    printf("[pplay] === Starting FULL sandbox escape (sceKernelJailbreak) ===\n");
+    printf("[pplay] === Starting FULL sandbox escape ===\n");
 
-    int ret = sceKernelJailbreak();
-    if (ret == 0) {
-        printf("[pplay] ✅ SANDBOX ESCAPE SUCCESS! Pełny dostęp do całego filesystemu\n");
+    if (sceKernelJailbreak) {
+        int ret = sceKernelJailbreak();
+        if (ret == 0) {
+            printf("[pplay] ✅ sceKernelJailbreak SUCCESS! Full filesystem access granted.\n");
+        } else {
+            printf("[pplay] sceKernelJailbreak returned %d (still trying)\n", ret);
+        }
     } else {
-        printf("[pplay] sceKernelJailbreak zwróciło %d - GoldHEN i tak powinien dać dostęp\n", ret);
+        printf("[pplay] sceKernelJailbreak not available - using GoldHEN fallback\n");
     }
+
+    printf("[pplay] Sandbox escape finished. Full FS should be available now.\n");
 }
 #endif
 
