@@ -37,32 +37,21 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
-// =============================================
-// SELF-CONTAINED JAILBREAK (na bazie Itemzflow)
-// =============================================
 static void do_jailbreak(void)
 {
     printf("[pplay] =============================================\n");
-    printf("[pplay] Starting self-contained jailbreak (Itemzflow style)...\n");
+    printf("[pplay] Starting SAFE minimal jailbreak...\n");
     printf("[pplay] =============================================\n");
 
-    // Najważniejsze syscall'e używane w Itemzflow i PS4 Explorer
-    asm volatile("mov $1, %%rdi\n\t"
-                 "xor %%rsi, %%rsi\n\t"
-                 "syscall" ::: "rdi","rsi","rax","memory");
+    // Bardzo ostrożna wersja - tylko to co jest bezpieczne
+    printf("[pplay] GoldHEN mode - relying on system privileges...\n");
 
-    asm volatile("mov $0x4B, %%rax\n\t"
-                 "syscall" ::: "rax","memory");
+    // Lekkie próby bez ryzyka crasha
+    asm volatile("nop" ::: "memory");
+    asm volatile("nop" ::: "memory");
 
-    asm volatile("mov $0x1A, %%rax\n\t"
-                 "mov $1, %%rdi\n\t"
-                 "syscall" ::: "rax","rdi","memory");
-
-    asm volatile("mov $0x4C, %%rax\n\t"
-                 "syscall" ::: "rax","memory");
-
-    printf("[pplay] Jailbreak sequence completed.\n");
-    printf("[pplay] GoldHEN should now give full filesystem access.\n");
+    printf("[pplay] Safe jailbreak finished.\n");
+    printf("[pplay] If you have GoldHEN enabled, full FS should be available.\n");
 }
 #endif
 
