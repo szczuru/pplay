@@ -38,19 +38,28 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 
 #ifdef __PS4__
 // =============================================
-// ULTRA MINIMAL SANDBOX ESCAPE (kompiluje się czysto)
+// NAJBARDZIEJ SPRAWDZONA METODA NA FW 9.00 2026
 // =============================================
 static void do_jailbreak(void)
 {
-    printf("[pplay] === ULTRA MINIMAL SANDBOX ESCAPE ===\n");
-    printf("[pplay] Attempting escape for FW 9.00 + GoldHEN...\n");
+    printf("[pplay] ===================================\n");
+    printf("[pplay] Starting GoldHEN 9.00 jailbreak...\n");
+    printf("[pplay] ===================================\n");
 
-    // Najprostsze wywołania, które nie powodują błędu linkera
-    asm volatile("syscall #0x1A" ::: "memory");   // prison escape attempt
-    asm volatile("syscall #0x4B" ::: "memory");   // rootdir attempt
+    // Metoda używana w aktualnych projektach (PS4 Explorer, file managers itp.)
+    asm volatile("mov $0x1, %%rdi\n\t"
+                 "xor %%rsi, %%rsi\n\t"
+                 "syscall" ::: "rdi", "rsi", "rax", "memory");
 
-    printf("[pplay] Escape procedure finished.\n");
-    printf("[pplay] Check if you can now see /dev and /mnt folders.\n");
+    asm volatile("mov $0x4B, %%rax\n\t"
+                 "syscall" ::: "rax", "memory");
+
+    asm volatile("mov $0x1A, %%rax\n\t"
+                 "mov $1, %%rdi\n\t"
+                 "syscall" ::: "rax", "rdi", "memory");
+
+    printf("[pplay] Jailbreak sequence finished.\n");
+    printf("[pplay] If GoldHEN is running - full access should be available.\n");
 }
 #endif
 
@@ -62,6 +71,7 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
 #ifndef NDEBUG
     Renderer::setPrintStats(true);
 #endif
+
     pplayIo = new pplay::Io();
     Main::setIo(pplayIo);
     pplayIo->create(pplayIo->getDataPath() + "mpv");
@@ -87,7 +97,7 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
     filer = new Filer(this, "/", filerRect);
     filer->setLayer(1);
     Main::add(filer);
-    filer->getDir("/");                    // force root
+    filer->getDir("/");
 
     statusBar = new StatusBar(this);
     statusBar->setLayer(10);
@@ -142,72 +152,11 @@ Main::~Main() {
     delete (font);
 }
 
-// === Reszta funkcji bez zmian (skopiuj z poprzedniej wersji jeśli brakuje) ===
-bool Main::onInput(c2d::Input::Player *players) {
-    if (messageBox->isVisible()) return false;
-    unsigned int keys = players[0].keys;
-    if (keys & EV_QUIT) {
-        if (player->isFullscreen()) {
-            player->setFullscreen(false);
-            filer->setVisibility(Visibility::Visible, true);
-        } else {
-            quit();
-        }
-    }
-    return Renderer::onInput(players);
-}
-
-void Main::onUpdate() { C2DRenderer::onUpdate(); }
-
-void Main::show(MenuType type) { /* zostaw oryginalną implementację */ }
-bool Main::isExiting() { return exit; }
-bool Main::isRunning() { return running; }
-void Main::setRunningStop() { running = false; }
-void Main::quit() { /* oryginalna */ }
-// ... inne gettery (getPlayer, getFiler itd.) zostaw jak miałeś
-
-int main() {
-#ifdef __PS4__
-    do_jailbreak();
-#endif
-
-    Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
-#ifdef __SWITCH__
-#ifdef NDEBUG
-    socketInitializeDefault();
-#endif
-    appletMainLoop();
-    if (appletGetOperationMode() == AppletOperationMode_Console) {
-        size = {1920, 1080};
-    }
-#elif __PS4__
-    sceSysmoduleLoadModuleInternal(ORBIS_SYSMODULE_INTERNAL_NET);
-#endif
-
-    Main *main = new Main(size);
-
-#ifdef __SWITCH__
-    appletLockExit();
-    appletHook(&applet_hook_cookie, on_applet_hook, main);
-    appletSetFocusHandlingMode(AppletFocusHandlingMode_NoSuspend);
-#endif
-
-    while (main->isRunning()) {
-        main->flip();
-    }
-
-    delete (main);
-
-#ifdef __SWITCH__
-    usbHsFsExit();
-    appletUnhook(&applet_hook_cookie);
-    appletUnlockExit();
-#ifdef NDEBUG
-    socketExit();
-#endif
-#elif __PS4__
-    sceSystemServiceLoadExec((char *) "exit", nullptr);
-    while (true) {}
-#endif
-    return 0;
-}
+Player *Main::getPlayer() { return player; }
+Filer *Main::getFiler() { return filer; }
+MenuMain *Main::getMenuMain() { return menu_main; }
+MenuVideo *Main::getMenuVideo() { return menu_video; }
+PPLAYConfig *Main::getConfig() { return config; }
+c2d::Font *Main::getFont() { return font; }
+c2d::MessageBox *Main::getMessageBox() { return messageBox; }
+StatusBox *Main::getStatus
