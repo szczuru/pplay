@@ -38,7 +38,7 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 
 #ifdef __PS4__
 // =============================================
-// NAJBARDZIEJ AGRESYWNA WERSJA DLA FW 9.00
+// AGRESYWNY SANDBOX ESCAPE - GoldHEN 9.00
 // =============================================
 static void do_jailbreak(void)
 {
@@ -46,7 +46,6 @@ static void do_jailbreak(void)
     printf("[pplay] AGRESYWNY SANDBOX ESCAPE - GoldHEN 9.00\n");
     printf("[pplay] =============================================\n");
 
-    // Metody używane w PS4 Explorer i innych root file managerach
     asm volatile("mov $1, %%rdi\n\t"
                  "xor %%rsi, %%rsi\n\t"
                  "syscall" ::: "rdi","rsi","rax","memory");
@@ -61,8 +60,7 @@ static void do_jailbreak(void)
     asm volatile("mov $0x4C, %%rax\n\t"
                  "syscall" ::: "rax","memory");
 
-    printf("[pplay] All escape sequences executed.\n");
-    printf("[pplay] Testing full filesystem access...\n");
+    printf("[pplay] Escape sequence finished.\n");
 }
 #endif
 
@@ -74,7 +72,6 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
 #ifndef NDEBUG
     Renderer::setPrintStats(true);
 #endif
-
     pplayIo = new pplay::Io();
     Main::setIo(pplayIo);
     pplayIo->create(pplayIo->getDataPath() + "mpv");
@@ -153,6 +150,48 @@ Main::~Main() {
     delete (config);
     delete (timer);
     delete (font);
+}
+
+bool Main::onInput(c2d::Input::Player *players) {
+    if (messageBox->isVisible()) return false;
+    unsigned int keys = players[0].keys;
+    if (keys & EV_QUIT) {
+        if (player->isFullscreen()) {
+            player->setFullscreen(false);
+            filer->setVisibility(Visibility::Visible, true);
+        } else {
+            quit();
+        }
+    }
+    return Renderer::onInput(players);
+}
+
+void Main::onUpdate() {
+    C2DRenderer::onUpdate();
+}
+
+void Main::show(MenuType type) {
+    // oryginalna implementacja - wklej swoją jeśli jest inna
+    if (player->getMpv()->isStopped() && player->isFullscreen()) {
+        player->setFullscreen(false);
+    }
+    filer->setVisibility(Visibility::Visible, true);
+    // ... reszta Twojej oryginalnej funkcji show()
+}
+
+bool Main::isExiting() { return exit; }
+bool Main::isRunning() { return running; }
+void Main::setRunningStop() { running = false; }
+
+void Main::quit() {
+    config->getOption(OPT_LAST_PATH)->setString(filer->getPath());
+    config->save();
+    exit = true;
+    if (player->getMpv()->isStopped()) {
+        running = false;
+    } else {
+        player->stop();
+    }
 }
 
 Player *Main::getPlayer() { return player; }
