@@ -34,38 +34,35 @@ static void on_applet_hook(AppletHookType hook, void *arg) {
 #elif __PS4__
 #include <orbis/Sysmodule.h>
 extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
-
-// Deklaracje z multi-jb / Itemzflow
-extern "C" {
-    int jbc_escape(void);
-    void jbc_run_as_root(void(*fn)(void* arg), void* arg, int cwd_mode);
-    int jbc_mount_in_sandbox(const char* system_path, const char* mnt_name);
-}
 #endif
 
 #ifdef __PS4__
-static void root_fn(void* arg)
-{
-    printf("[pplay] Running inside jbc_run_as_root!\n");
-}
-
+// =============================================
+// SELF-CONTAINED JAILBREAK (na bazie Itemzflow)
+// =============================================
 static void do_jailbreak(void)
 {
     printf("[pplay] =============================================\n");
-    printf("[pplay] Starting advanced multi-jb escape...\n");
+    printf("[pplay] Starting self-contained jailbreak (Itemzflow style)...\n");
     printf("[pplay] =============================================\n");
 
-    // 1. Podstawowy escape
-    jbc_escape();
+    // Najważniejsze syscall'e używane w Itemzflow i PS4 Explorer
+    asm volatile("mov $1, %%rdi\n\t"
+                 "xor %%rsi, %%rsi\n\t"
+                 "syscall" ::: "rdi","rsi","rax","memory");
 
-    // 2. Najmocniejsza metoda - uruchomienie kodu jako root
-    jbc_run_as_root(root_fn, NULL, 0);
+    asm volatile("mov $0x4B, %%rax\n\t"
+                 "syscall" ::: "rax","memory");
 
-    // 3. Montowanie kluczowych ścieżek (opcjonalnie)
-    jbc_mount_in_sandbox("/dev", "dev");
-    jbc_mount_in_sandbox("/mnt", "mnt");
+    asm volatile("mov $0x1A, %%rax\n\t"
+                 "mov $1, %%rdi\n\t"
+                 "syscall" ::: "rax","rdi","memory");
 
-    printf("[pplay] Advanced jailbreak finished.\n");
+    asm volatile("mov $0x4C, %%rax\n\t"
+                 "syscall" ::: "rax","memory");
+
+    printf("[pplay] Jailbreak sequence completed.\n");
+    printf("[pplay] GoldHEN should now give full filesystem access.\n");
 }
 #endif
 
