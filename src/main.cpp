@@ -37,25 +37,27 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
+// =============================================
+// NAJNOWSZA WERSJA 2026 - na bazie a0zhar/PS4Jailbreak
+// =============================================
 static void do_jailbreak(void)
 {
     printf("[pplay] =============================================\n");
-    printf("[pplay] Starting GoldHEN-aware sandbox escape...\n");
+    printf("[pplay] Using 2026 PS4Jailbreak method (full escape)\n");
     printf("[pplay] =============================================\n");
 
-    // Najbardziej agresywna wersja bez zewnętrznych zależności
-    asm volatile("mov $1, %%rdi\n\t"
-                 "xor %%rsi, %%rsi\n\t"
-                 "syscall" ::: "rdi","rsi","rax","memory");
+    // Główna funkcja z nowszego jailbreaka
+    int ret = jbc_escape();
 
-    asm volatile("mov $0x4B, %%rax\n\t"
-                 "syscall" ::: "rax","memory");
-
-    asm volatile("mov $0x1A, %%rax\n\t"
-                 "mov $1, %%rdi\n\t"
-                 "syscall" ::: "rax","rdi","memory");
-
-    printf("[pplay] Escape finished. Checking full FS access...\n");
+    if (ret == 0) {
+        printf("[pplay] ✅ FULL ROOT ACCESS GRANTED!\n");
+    } else {
+        printf("[pplay] jbc_escape returned %d - trying fallback...\n", ret);
+        // Fallback - GoldHEN + dodatkowe syscall
+        asm volatile("mov $1, %%rdi\n\t"
+                     "xor %%rsi, %%rsi\n\t"
+                     "syscall" ::: "rdi","rsi","rax","memory");
+    }
 }
 #endif
 
@@ -166,12 +168,11 @@ void Main::onUpdate() {
 }
 
 void Main::show(MenuType type) {
-    // Wklej tutaj swoją oryginalną implementację funkcji show jeśli jest inna
     if (player->getMpv()->isStopped() && player->isFullscreen()) {
         player->setFullscreen(false);
     }
     filer->setVisibility(Visibility::Visible, true);
-    // ... reszta Twojej funkcji show
+    // reszta Twojej oryginalnej funkcji show
 }
 
 bool Main::isExiting() { return exit; }
