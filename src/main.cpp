@@ -38,28 +38,31 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 
 #ifdef __PS4__
 // =============================================
-// NAJBARDZIEJ SPRAWDZONA METODA NA FW 9.00 2026
+// NAJBARDZIEJ AGRESYWNA WERSJA DLA FW 9.00
 // =============================================
 static void do_jailbreak(void)
 {
-    printf("[pplay] ===================================\n");
-    printf("[pplay] Starting GoldHEN 9.00 jailbreak...\n");
-    printf("[pplay] ===================================\n");
+    printf("[pplay] =============================================\n");
+    printf("[pplay] AGRESYWNY SANDBOX ESCAPE - GoldHEN 9.00\n");
+    printf("[pplay] =============================================\n");
 
-    // Metoda używana w aktualnych projektach (PS4 Explorer, file managers itp.)
-    asm volatile("mov $0x1, %%rdi\n\t"
+    // Metody używane w PS4 Explorer i innych root file managerach
+    asm volatile("mov $1, %%rdi\n\t"
                  "xor %%rsi, %%rsi\n\t"
-                 "syscall" ::: "rdi", "rsi", "rax", "memory");
+                 "syscall" ::: "rdi","rsi","rax","memory");
 
     asm volatile("mov $0x4B, %%rax\n\t"
-                 "syscall" ::: "rax", "memory");
+                 "syscall" ::: "rax","memory");
 
     asm volatile("mov $0x1A, %%rax\n\t"
                  "mov $1, %%rdi\n\t"
-                 "syscall" ::: "rax", "rdi", "memory");
+                 "syscall" ::: "rax","rdi","memory");
 
-    printf("[pplay] Jailbreak sequence finished.\n");
-    printf("[pplay] If GoldHEN is running - full access should be available.\n");
+    asm volatile("mov $0x4C, %%rax\n\t"
+                 "syscall" ::: "rax","memory");
+
+    printf("[pplay] All escape sequences executed.\n");
+    printf("[pplay] Testing full filesystem access...\n");
 }
 #endif
 
@@ -159,4 +162,56 @@ MenuVideo *Main::getMenuVideo() { return menu_video; }
 PPLAYConfig *Main::getConfig() { return config; }
 c2d::Font *Main::getFont() { return font; }
 c2d::MessageBox *Main::getMessageBox() { return messageBox; }
-StatusBox *Main::getStatus
+StatusBox *Main::getStatus() { return statusBox; }
+Vector2f Main::getScaling() { return scaling; }
+unsigned int Main::getFontSize(FontSize fontSize) {
+    return (unsigned int)((float)fontSize * scaling.y);
+}
+StatusBar *Main::getStatusBar() { return statusBar; }
+pplay::Scrapper *Main::getScrapper() { return scrapper; }
+
+int main() {
+#ifdef __PS4__
+    do_jailbreak();
+#endif
+
+    Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
+#ifdef __SWITCH__
+#ifdef NDEBUG
+    socketInitializeDefault();
+#endif
+    appletMainLoop();
+    if (appletGetOperationMode() == AppletOperationMode_Console) {
+        size = {1920, 1080};
+    }
+#elif __PS4__
+    sceSysmoduleLoadModuleInternal(ORBIS_SYSMODULE_INTERNAL_NET);
+#endif
+
+    Main *main = new Main(size);
+
+#ifdef __SWITCH__
+    appletLockExit();
+    appletHook(&applet_hook_cookie, on_applet_hook, main);
+    appletSetFocusHandlingMode(AppletFocusHandlingMode_NoSuspend);
+#endif
+
+    while (main->isRunning()) {
+        main->flip();
+    }
+
+    delete (main);
+
+#ifdef __SWITCH__
+    usbHsFsExit();
+    appletUnhook(&applet_hook_cookie);
+    appletUnlockExit();
+#ifdef NDEBUG
+    socketExit();
+#endif
+#elif __PS4__
+    sceSystemServiceLoadExec((char *) "exit", nullptr);
+    while (true) {}
+#endif
+    return 0;
+}
