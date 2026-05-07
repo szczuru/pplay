@@ -37,15 +37,13 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
-// =============================================
-// AGRESYWNY SANDBOX ESCAPE - GoldHEN 9.00
-// =============================================
 static void do_jailbreak(void)
 {
     printf("[pplay] =============================================\n");
-    printf("[pplay] AGRESYWNY SANDBOX ESCAPE - GoldHEN 9.00\n");
+    printf("[pplay] Starting GoldHEN-aware sandbox escape...\n");
     printf("[pplay] =============================================\n");
 
+    // Najbardziej agresywna wersja bez zewnętrznych zależności
     asm volatile("mov $1, %%rdi\n\t"
                  "xor %%rsi, %%rsi\n\t"
                  "syscall" ::: "rdi","rsi","rax","memory");
@@ -57,10 +55,7 @@ static void do_jailbreak(void)
                  "mov $1, %%rdi\n\t"
                  "syscall" ::: "rax","rdi","memory");
 
-    asm volatile("mov $0x4C, %%rax\n\t"
-                 "syscall" ::: "rax","memory");
-
-    printf("[pplay] Escape sequence finished.\n");
+    printf("[pplay] Escape finished. Checking full FS access...\n");
 }
 #endif
 
@@ -171,12 +166,12 @@ void Main::onUpdate() {
 }
 
 void Main::show(MenuType type) {
-    // oryginalna implementacja - wklej swoją jeśli jest inna
+    // Wklej tutaj swoją oryginalną implementację funkcji show jeśli jest inna
     if (player->getMpv()->isStopped() && player->isFullscreen()) {
         player->setFullscreen(false);
     }
     filer->setVisibility(Visibility::Visible, true);
-    // ... reszta Twojej oryginalnej funkcji show()
+    // ... reszta Twojej funkcji show
 }
 
 bool Main::isExiting() { return exit; }
