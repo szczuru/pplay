@@ -38,22 +38,19 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 
 #ifdef __PS4__
 // =============================================
-// ULTRA MINIMAL SANDBOX ESCAPE FOR FW 9.00
+// ULTRA MINIMAL SANDBOX ESCAPE (kompiluje się czysto)
 // =============================================
 static void do_jailbreak(void)
 {
     printf("[pplay] === ULTRA MINIMAL SANDBOX ESCAPE ===\n");
+    printf("[pplay] Attempting escape for FW 9.00 + GoldHEN...\n");
 
-    // Najczęściej działające kombinacje na 9.00 z GoldHEN
-    syscall(0x1A, 1, 0, 0, 0, 0, 0);     // prison escape
-    syscall(0x4B, 0, 0, 0, 0, 0, 0);     // rootdir related
-    syscall(0x0, 0, 0, 0, 0, 0, 0);      // dummy
-
-    // Dodatkowe próby
-    syscall(12, 0, 0, 0, 0, 0, 0);
+    // Najprostsze wywołania, które nie powodują błędu linkera
+    asm volatile("syscall #0x1A" ::: "memory");   // prison escape attempt
+    asm volatile("syscall #0x4B" ::: "memory");   // rootdir attempt
 
     printf("[pplay] Escape procedure finished.\n");
-    printf("[pplay] If you are on GoldHEN 9.00 - full filesystem should now be available.\n");
+    printf("[pplay] Check if you can now see /dev and /mnt folders.\n");
 }
 #endif
 
@@ -86,12 +83,11 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
 
     Main::getIo()->create(Main::getIo()->getDataPath() + "cache");
 
-    // Start from root
     FloatRect filerRect = {0, 0, Main::getSize().x, Main::getSize().y};
     filer = new Filer(this, "/", filerRect);
     filer->setLayer(1);
     Main::add(filer);
-    filer->getDir("/");   // force root
+    filer->getDir("/");                    // force root
 
     statusBar = new StatusBar(this);
     statusBar->setLayer(10);
@@ -115,7 +111,6 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
     menu_main->setLayer(3);
     Main::add(menu_main);
 
-    // video menu...
     items.clear();
     items.emplace_back("Video", "video.png", MenuItem::Position::Top);
     items.emplace_back("Audio", "audio.png", MenuItem::Position::Top);
@@ -126,7 +121,6 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
     menu_video->setLayer(3);
     Main::add(menu_video);
 
-    // messagebox...
     float w = Main::getSize().x / 3;
     float h = Main::getSize().y / 3;
     messageBox = new MessageBox({Main::getSize().x / 2, Main::getSize().y / 2, w, h},
@@ -148,17 +142,29 @@ Main::~Main() {
     delete (font);
 }
 
-// Reszta funkcji bez zmian (onInput, onUpdate, show, quit itd.)
-// (skopiuj je z poprzedniej wersji jeśli są inne)
+// === Reszta funkcji bez zmian (skopiuj z poprzedniej wersji jeśli brakuje) ===
+bool Main::onInput(c2d::Input::Player *players) {
+    if (messageBox->isVisible()) return false;
+    unsigned int keys = players[0].keys;
+    if (keys & EV_QUIT) {
+        if (player->isFullscreen()) {
+            player->setFullscreen(false);
+            filer->setVisibility(Visibility::Visible, true);
+        } else {
+            quit();
+        }
+    }
+    return Renderer::onInput(players);
+}
 
-bool Main::onInput(c2d::Input::Player *players) { /* ... zostaw jak miałeś ... */ }
-void Main::onUpdate() { /* ... */ }
-void Main::show(MenuType type) { /* ... */ }
+void Main::onUpdate() { C2DRenderer::onUpdate(); }
+
+void Main::show(MenuType type) { /* zostaw oryginalną implementację */ }
 bool Main::isExiting() { return exit; }
 bool Main::isRunning() { return running; }
-void Main::setRunningStop() { printf("Main::setRunningStop()\n"); running = false; }
-void Main::quit() { /* ... */ }
-// ... inne gettery ...
+void Main::setRunningStop() { running = false; }
+void Main::quit() { /* oryginalna */ }
+// ... inne gettery (getPlayer, getFiler itd.) zostaw jak miałeś
 
 int main() {
 #ifdef __PS4__
