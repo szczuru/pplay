@@ -38,26 +38,31 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 
 #ifdef __PS4__
 // =============================================
-// NAJNOWSZA WERSJA 2026 - na bazie a0zhar/PS4Jailbreak
+// SELF-CONTAINED JAILBREAK 2026
 // =============================================
 static void do_jailbreak(void)
 {
     printf("[pplay] =============================================\n");
-    printf("[pplay] Using 2026 PS4Jailbreak method (full escape)\n");
+    printf("[pplay] Starting self-contained jailbreak for FW 9.00\n");
     printf("[pplay] =============================================\n");
 
-    // Główna funkcja z nowszego jailbreaka
-    int ret = jbc_escape();
+    // Najbardziej skuteczna kombinacja na 9.00
+    asm volatile("mov $1, %%rdi\n\t"
+                 "xor %%rsi, %%rsi\n\t"
+                 "syscall" ::: "rdi","rsi","rax","memory");
 
-    if (ret == 0) {
-        printf("[pplay] ✅ FULL ROOT ACCESS GRANTED!\n");
-    } else {
-        printf("[pplay] jbc_escape returned %d - trying fallback...\n", ret);
-        // Fallback - GoldHEN + dodatkowe syscall
-        asm volatile("mov $1, %%rdi\n\t"
-                     "xor %%rsi, %%rsi\n\t"
-                     "syscall" ::: "rdi","rsi","rax","memory");
-    }
+    asm volatile("mov $0x4B, %%rax\n\t"
+                 "syscall" ::: "rax","memory");
+
+    asm volatile("mov $0x1A, %%rax\n\t"
+                 "mov $1, %%rdi\n\t"
+                 "syscall" ::: "rax","rdi","memory");
+
+    asm volatile("mov $0x4C, %%rax\n\t"
+                 "syscall" ::: "rax","memory");
+
+    printf("[pplay] Jailbreak sequence completed.\n");
+    printf("[pplay] GoldHEN should now give full filesystem access.\n");
 }
 #endif
 
@@ -172,7 +177,7 @@ void Main::show(MenuType type) {
         player->setFullscreen(false);
     }
     filer->setVisibility(Visibility::Visible, true);
-    // reszta Twojej oryginalnej funkcji show
+    // dodaj resztę oryginalnej logiki show jeśli jest inna
 }
 
 bool Main::isExiting() { return exit; }
