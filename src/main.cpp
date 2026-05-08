@@ -39,6 +39,13 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
+typedef void (*jbc_run_as_root_t)(void(*fn)(void* arg), void* arg, int cwd_mode);
+
+static void root_function(void* arg)
+{
+    write_log("[pplay] >>> CODE EXECUTING AS ROOT <<<");
+}
+
 static void write_log(const char* text)
 {
     FILE* f = fopen("/data/pplay.log", "a");
@@ -52,11 +59,21 @@ static void do_jailbreak(void)
 {
     write_log("[pplay] do_jailbreak() START");
 
-    write_log("[pplay] Trying to load /data/jb.prx...");
     int module_id = sceKernelLoadStartModule("/data/jb.prx", 0, NULL, 0, NULL, NULL);
-
     if (module_id > 0) {
         write_log("[pplay] jb.prx LOADED SUCCESSFULLY");
+
+        void* addr = NULL;
+        int ret = sceKernelDlsym(module_id, "jbc_run_as_root", &addr);
+
+        if (ret == 0 && addr != NULL) {
+            write_log("[pplay] Found jbc_run_as_root - calling it...");
+            jbc_run_as_root_t run_as_root = (jbc_run_as_root_t)addr;
+            run_as_root(root_function, NULL, 0);
+            write_log("[pplay] jbc_run_as_root finished");
+        } else {
+            write_log("[pplay] jbc_run_as_root NOT FOUND");
+        }
     } else {
         char buf[64];
         snprintf(buf, sizeof(buf), "[pplay] LOAD FAILED (0x%X)", module_id);
@@ -67,6 +84,7 @@ static void do_jailbreak(void)
 }
 #endif
 
+// Reszta kodu pozostaje taka sama jak wcześniej (Main class, konstruktor itd.)
 using namespace c2d;
 using namespace c2d::config;
 using namespace pplay;
