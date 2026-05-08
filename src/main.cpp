@@ -113,11 +113,12 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
 
     Main::getIo()->create(Main::getIo()->getDataPath() + "cache");
 
+    // === WAŻNE - startujemy od roota ===
     FloatRect filerRect = {0, 0, Main::getSize().x, Main::getSize().y};
     filer = new Filer(this, "/", filerRect);
     filer->setLayer(1);
     Main::add(filer);
-    filer->getDir("/");
+    filer->getDir("/");           // force root
 
     statusBar = new StatusBar(this);
     statusBar->setLayer(10);
@@ -200,6 +201,11 @@ void Main::show(MenuType type) {
         if (!filer->getDir(path)) {
             filer->getDir("/");
         }
+#ifdef __SWITCH__
+        } else if (type == MenuType::Usb) {
+            usbInit();
+            filer->getDir(config->getOption(OPT_UMS_DEVICE)->getString());
+#endif
     } else {
         std::string path = config->getOption(OPT_NETWORK)->getString();
         if (!filer->getDir(path)) {
