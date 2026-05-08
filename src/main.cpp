@@ -41,17 +41,29 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 static void do_jailbreak(void)
 {
     printf("[pplay] =============================================\n");
-    printf("[pplay] Trying to load jb.prx (Itemzflow method)...\n");
+    printf("[pplay] ADVANCED JB LOADER STARTED\n");
     printf("[pplay] =============================================\n");
 
-    int module_id = sceKernelLoadStartModule("/data/jb.prx", 0, NULL, 0, NULL, NULL);
+    const char* paths[4] = {
+        "/data/jb.prx",
+        "/app0/jb.prx",
+        "/data/multi-jb.prx",
+        "/app0/multi-jb.prx"
+    };
 
-    if (module_id > 0) {
-        printf("[pplay] ✅ jb.prx loaded successfully (ID: %d)\n", module_id);
-    } else {
-        printf("[pplay] ❌ Failed to load jb.prx (error: 0x%X)\n", module_id);
-        printf("[pplay] Make sure jb.prx is placed in /data/jb.prx on PS4\n");
+    for (int i = 0; i < 4; i++) {
+        printf("[pplay] Trying to load: %s\n", paths[i]);
+        int module_id = sceKernelLoadStartModule(paths[i], 0, NULL, 0, NULL, NULL);
+        if (module_id > 0) {
+            printf("[pplay] ✅ SUCCESS! Module loaded (ID: %d) from %s\n", module_id, paths[i]);
+            break;
+        } else {
+            printf("[pplay] Failed (0x%X)\n", module_id);
+        }
     }
+
+    printf("[pplay] JB loading finished.\n");
+    printf("[pplay] Now starting Filer with root /\n");
 }
 #endif
 
@@ -88,7 +100,7 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
     filer = new Filer(this, "/", filerRect);
     filer->setLayer(1);
     Main::add(filer);
-    filer->getDir("/");
+    filer->getDir("/");   // force root
 
     statusBar = new StatusBar(this);
     statusBar->setLayer(10);
@@ -167,28 +179,15 @@ void Main::show(MenuType type) {
     }
     filer->setVisibility(Visibility::Visible, true);
     if (type == MenuType::Home) {
-#ifdef __SWITCH__
-        usbHsFsExit();
-#endif
         std::string path = config->getOption(OPT_HOME_PATH)->getString();
         if (!filer->getDir(path)) {
             filer->getDir("/");
         }
-#ifdef __SWITCH__
-        } else if (type == MenuType::Usb) {
-            usbInit();
-            filer->getDir(config->getOption(OPT_UMS_DEVICE)->getString());
-#endif
-    } else {
-#ifdef __SWITCH__
-        usbHsFsExit();
-#endif
+    } else if (type == MenuType::Network) {
         std::string path = config->getOption(OPT_NETWORK)->getString();
         if (!filer->getDir(path)) {
             messageBox->show("OOPS", filer->getError(), "OK");
             show(MenuType::Home);
-        } else {
-            filer->clearHistory();
         }
     }
 }
