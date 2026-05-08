@@ -1,6 +1,7 @@
 #include "io.h"
 #include <dirent.h>
 #include <sys/stat.h>
+#include <cstring>
 
 namespace pplay {
 
@@ -8,11 +9,9 @@ std::vector<Io::File> Io::getDirList(const DeviceType &type, const std::vector<s
 {
     std::vector<Io::File> files;
 
-    // Na PS4 ignorujemy typ i extensions - pokazujemy wszystko
     DIR *dir = opendir("/");
     if (!dir) {
-        // fallback na data jeśli root nie działa
-        dir = opendir("/data");
+        dir = opendir("/data");  // fallback
     }
 
     if (dir) {
@@ -29,7 +28,7 @@ std::vector<Io::File> Io::getDirList(const DeviceType &type, const std::vector<s
                 Io::File f;
                 f.name = entry->d_name;
                 f.path = fullpath;
-                f.isDir = S_ISDIR(st.st_mode);
+                f.isDir = S_ISDIR(st.st_mode);   // poprawka
                 f.size = st.st_size;
                 files.push_back(f);
             }
