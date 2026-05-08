@@ -39,25 +39,39 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
+static void write_log(const char* text)
+{
+    FILE* f = fopen("/data/pplay.log", "a");
+    if (f) {
+        fprintf(f, "%s\n", text);
+        fclose(f);
+    }
+}
+
 static void do_jailbreak(void)
 {
-    printf("[pplay] =============================================\n");
-    printf("[pplay] ADVANCED JB LOADER + LOG TO FILE\n");
-    printf("[pplay] =============================================\n");
+    write_log("[pplay] =============================================");
+    write_log("[pplay] ADVANCED JB LOADER STARTED");
+    write_log("[pplay] =============================================");
 
     const char* paths[4] = { "/data/jb.prx", "/app0/jb.prx", "/data/multi-jb.prx", "/app0/multi-jb.prx" };
 
     for (int i = 0; i < 4; i++) {
-        printf("[pplay] Trying: %s\n", paths[i]);
+        char msg[128];
+        snprintf(msg, sizeof(msg), "Trying: %s", paths[i]);
+        write_log(msg);
+
         int module_id = sceKernelLoadStartModule(paths[i], 0, NULL, 0, NULL, NULL);
         if (module_id > 0) {
-            printf("[pplay] ✅ SUCCESS! Loaded from %s (ID: %d)\n", paths[i], module_id);
+            snprintf(msg, sizeof(msg), "SUCCESS! Loaded from %s (ID: %d)", paths[i], module_id);
+            write_log(msg);
             break;
         } else {
-            printf("[pplay] Failed (0x%X)\n", module_id);
+            snprintf(msg, sizeof(msg), "Failed (0x%X)", module_id);
+            write_log(msg);
         }
     }
-    printf("[pplay] JB loader finished.\n");
+    write_log("[pplay] JB loader finished.");
 }
 #endif
 
@@ -225,12 +239,6 @@ pplay::Scrapper *Main::getScrapper() { return scrapper; }
 
 int main() {
 #ifdef __PS4__
-    // Przekierowanie logów do pliku
-    freopen("/data/pplay.log", "w", stdout);
-    freopen("/data/pplay.log", "a", stderr);
-    setvbuf(stdout, NULL, _IONBF, 0);
-    setvbuf(stderr, NULL, _IONBF, 0);
-
     do_jailbreak();
 #endif
 
