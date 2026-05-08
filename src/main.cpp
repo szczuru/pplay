@@ -39,30 +39,38 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
-static void write_log(const char* text)
+typedef void (*jbc_run_as_root_t)(void(*fn)(void* arg), void* arg, int cwd_mode);
+
+static void root_function(void* arg)
 {
-    FILE* f = fopen("/data/pplay.log", "a");
-    if (f) {
-        fprintf(f, "%s\n", text);
-        fclose(f);
-    }
+    // Kod uruchomiony z uprawnieniami root
+    printf("[pplay] CODE RUNNING AS ROOT!\n");
 }
 
 static void do_jailbreak(void)
 {
-    write_log("[pplay] =============================================");
-    write_log("[pplay] ADVANCED JB LOADER STARTED");
-    write_log("[pplay] =============================================");
+    printf("[pplay] =============================================\n");
+    printf("[pplay] Trying jb.prx + jbc_run_as_root\n");
+    printf("[pplay] =============================================\n");
 
     int module_id = sceKernelLoadStartModule("/data/jb.prx", 0, NULL, 0, NULL, NULL);
     if (module_id > 0) {
-        write_log("[pplay] jb.prx LOADED SUCCESSFULLY");
+        printf("[pplay] jb.prx loaded (ID: %d)\n", module_id);
+
+        void* addr = NULL;
+        int ret = sceKernelDlsym(module_id, "jbc_run_as_root", &addr);
+
+        if (ret == 0 && addr != NULL) {
+            jbc_run_as_root_t run_as_root = (jbc_run_as_root_t)addr;
+            printf("[pplay] Found jbc_run_as_root - executing as root...\n");
+            run_as_root(root_function, NULL, 0);
+            printf("[pplay] jbc_run_as_root finished.\n");
+        } else {
+            printf("[pplay] jbc_run_as_root not found (dlsym failed)\n");
+        }
     } else {
-        char buf[64];
-        snprintf(buf, sizeof(buf), "[pplay] Failed to load jb.prx (0x%X)", module_id);
-        write_log(buf);
+        printf("[pplay] Failed to load jb.prx (0x%X)\n", module_id);
     }
-    write_log("[pplay] JB loader finished.");
 }
 #endif
 
@@ -182,11 +190,6 @@ void Main::show(MenuType type) {
         if (!filer->getDir(path)) {
             filer->getDir("/");
         }
-#ifdef __SWITCH__
-        } else if (type == MenuType::Usb) {
-            usbInit();
-            filer->getDir(config->getOption(OPT_UMS_DEVICE)->getString());
-#endif
     } else {
         std::string path = config->getOption(OPT_NETWORK)->getString();
         if (!filer->getDir(path)) {
@@ -230,7 +233,7 @@ pplay::Scrapper *Main::getScrapper() { return scrapper; }
 
 int main() {
 #ifdef __PS4__
-    // Najwcześniejsze logowanie
+    // Log na samym początku
     FILE* f = fopen("/data/pplay.log", "w");
     if (f) {
         fprintf(f, "[pplay] main() started\n");
