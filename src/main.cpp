@@ -9,6 +9,35 @@
 #include "scrapper.h"
 #include <stdio.h>
 
+#ifdef __SWITCH__
+static AppletHookCookie applet_hook_cookie;
+static void on_applet_hook(AppletHookType hook, void *arg) {
+    Main *main = (Main *) arg;
+    switch (hook) {
+        case AppletHookType_OnExitRequest:
+            main->quit();
+            break;
+        case AppletHookType_OnFocusState:
+            if (appletGetFocusState() == AppletFocusState_InFocus) {
+                if (main->getPlayer()->getMpv()->isPaused()) {
+                    main->getPlayer()->resume();
+                }
+            } else {
+                if (!main->getPlayer()->getMpv()->isPaused()) {
+                    main->getPlayer()->pause();
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+#elif __PS4__
+#include <orbis/Sysmodule.h>
+#include <orbis/libkernel.h>
+extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
+#endif
+
 #ifdef __PS4__
 static void write_log(const char* text)
 {
@@ -18,21 +47,22 @@ static void write_log(const char* text)
         fclose(f);
     }
 }
-#endif
 
-#ifdef __PS4__
 static void do_jailbreak(void)
 {
-    write_log("[pplay] do_jailbreak() START");
-    write_log("[pplay] Trying to load jb.prx...");
+    write_log("[pplay] =============================================");
+    write_log("[pplay] ADVANCED JB LOADER STARTED");
+    write_log("[pplay] =============================================");
 
     int module_id = sceKernelLoadStartModule("/data/jb.prx", 0, NULL, 0, NULL, NULL);
     if (module_id > 0) {
         write_log("[pplay] jb.prx LOADED SUCCESSFULLY");
     } else {
-        write_log("[pplay] Failed to load jb.prx");
+        char buf[64];
+        snprintf(buf, sizeof(buf), "[pplay] Failed to load jb.prx (0x%X)", module_id);
+        write_log(buf);
     }
-    write_log("[pplay] do_jailbreak() FINISHED");
+    write_log("[pplay] JB loader finished.");
 }
 #endif
 
@@ -152,6 +182,11 @@ void Main::show(MenuType type) {
         if (!filer->getDir(path)) {
             filer->getDir("/");
         }
+#ifdef __SWITCH__
+        } else if (type == MenuType::Usb) {
+            usbInit();
+            filer->getDir(config->getOption(OPT_UMS_DEVICE)->getString());
+#endif
     } else {
         std::string path = config->getOption(OPT_NETWORK)->getString();
         if (!filer->getDir(path)) {
@@ -201,7 +236,6 @@ int main() {
         fprintf(f, "[pplay] main() started\n");
         fclose(f);
     }
-
     do_jailbreak();
 #endif
 
