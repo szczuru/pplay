@@ -37,30 +37,15 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
-// =============================================
-// NAJMOCNIEJSZA WERSJA - na samym początku
-// =============================================
 static void do_jailbreak(void)
 {
     printf("[pplay] =============================================\n");
-    printf("[pplay] EARLY JAILBREAK - Itemzflow / PS4 Explorer style\n");
+    printf("[pplay] SAFE MODE - Relying on GoldHEN privileges\n");
+    printf("[pplay] No dangerous syscalls - only logging\n");
     printf("[pplay] =============================================\n");
 
-    asm volatile("mov $1, %%rdi\n\t"
-                 "xor %%rsi, %%rsi\n\t"
-                 "syscall" ::: "rdi","rsi","rax","memory");
-
-    asm volatile("mov $0x4B, %%rax\n\t"
-                 "syscall" ::: "rax","memory");
-
-    asm volatile("mov $0x1A, %%rax\n\t"
-                 "mov $1, %%rdi\n\t"
-                 "syscall" ::: "rax","rdi","memory");
-
-    asm volatile("mov $0x4C, %%rax\n\t"
-                 "syscall" ::: "rax","memory");
-
-    printf("[pplay] Early jailbreak finished.\n");
+    // Nic agresywnego - tylko informacja
+    printf("[pplay] If you are running with GoldHEN on FW 9.00, full filesystem access should be available.\n");
 }
 #endif
 
@@ -93,12 +78,11 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
 
     Main::getIo()->create(Main::getIo()->getDataPath() + "cache");
 
-    // Force full root
     FloatRect filerRect = {0, 0, Main::getSize().x, Main::getSize().y};
     filer = new Filer(this, "/", filerRect);
     filer->setLayer(1);
     Main::add(filer);
-    filer->getDir("/");        // bardzo ważne - force root
+    filer->getDir("/");           // force root
 
     statusBar = new StatusBar(this);
     statusBar->setLayer(10);
@@ -235,7 +219,7 @@ pplay::Scrapper *Main::getScrapper() { return scrapper; }
 
 int main() {
 #ifdef __PS4__
-    do_jailbreak();   // jak najwcześniej
+    do_jailbreak();
 #endif
 
     Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
