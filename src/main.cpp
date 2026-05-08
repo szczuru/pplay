@@ -39,14 +39,6 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
-typedef void (*jbc_run_as_root_t)(void(*fn)(void* arg), void* arg, int cwd_mode);
-typedef int (*jbc_mount_in_sandbox_t)(const char* system_path, const char* mnt_name);
-
-static void root_function(void* arg)
-{
-    write_log("[pplay] >>> CODE EXECUTING AS ROOT <<<");
-}
-
 static void write_log(const char* text)
 {
     FILE* f = fopen("/data/pplay.log", "a");
@@ -54,6 +46,13 @@ static void write_log(const char* text)
         fprintf(f, "%s\n", text);
         fclose(f);
     }
+}
+
+typedef void (*jbc_run_as_root_t)(void(*fn)(void* arg), void* arg, int cwd_mode);
+
+static void root_function(void* arg)
+{
+    write_log("[pplay] >>> CODE EXECUTING AS ROOT <<<");
 }
 
 static void do_jailbreak(void)
@@ -64,25 +63,16 @@ static void do_jailbreak(void)
     if (module_id > 0) {
         write_log("[pplay] jb.prx LOADED SUCCESSFULLY");
 
-        // jbc_run_as_root
         void* addr = NULL;
-        if (sceKernelDlsym(module_id, "jbc_run_as_root", &addr) == 0 && addr) {
+        int ret = sceKernelDlsym(module_id, "jbc_run_as_root", &addr);
+
+        if (ret == 0 && addr != NULL) {
             write_log("[pplay] Found jbc_run_as_root - calling...");
             jbc_run_as_root_t run_as_root = (jbc_run_as_root_t)addr;
             run_as_root(root_function, NULL, 0);
             write_log("[pplay] jbc_run_as_root finished");
-        }
-
-        // Montowanie katalogów
-        addr = NULL;
-        if (sceKernelDlsym(module_id, "jbc_mount_in_sandbox", &addr) == 0 && addr) {
-            write_log("[pplay] Found jbc_mount_in_sandbox - mounting key dirs...");
-            jbc_mount_in_sandbox_t mount = (jbc_mount_in_sandbox_t)addr;
-            mount("/dev", "dev");
-            mount("/mnt", "mnt");
-            mount("/system", "system");
-            mount("/data", "data");
-            write_log("[pplay] Mounting finished");
+        } else {
+            write_log("[pplay] jbc_run_as_root NOT FOUND");
         }
     } else {
         char buf[64];
@@ -93,8 +83,6 @@ static void do_jailbreak(void)
     write_log("[pplay] do_jailbreak() FINISHED");
 }
 #endif
-
-// ... (reszta kodu Main bez zmian)
 
 using namespace c2d;
 using namespace c2d::config;
@@ -177,16 +165,66 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
     scrapper = new Scrapper(this);
 }
 
-// Reszta funkcji bez zmian (skopiuj z poprzedniej wersji)
-Main::~Main() { delete (scrapper); delete (config); delete (timer); delete (font); }
+Main::~Main() {
+    delete (scrapper);
+    delete (config);
+    delete (timer);
+    delete (font);
+}
 
-bool Main::onInput(c2d::Input::Player *players) { /* bez zmian */ }
-void Main::onUpdate() { C2DRenderer::onUpdate(); }
-void Main::show(MenuType type) { /* bez zmian */ }
+bool Main::onInput(c2d::Input::Player *players) {
+    if (messageBox->isVisible()) return false;
+    unsigned int keys = players[0].keys;
+    if (keys & EV_QUIT) {
+        if (player->isFullscreen()) {
+            player->setFullscreen(false);
+            filer->setVisibility(Visibility::Visible, true);
+        } else {
+            quit();
+        }
+    }
+    return Renderer::onInput(players);
+}
+
+void Main::onUpdate() {
+    C2DRenderer::onUpdate();
+}
+
+void Main::show(MenuType type) {
+    if (player->getMpv()->isStopped() && player->isFullscreen()) {
+        player->setFullscreen(false);
+    }
+    filer->setVisibility(Visibility::Visible, true);
+    if (type == MenuType::Home) {
+        std::string path = config->getOption(OPT_HOME_PATH)->getString();
+        if (!filer->getDir(path)) {
+            filer->getDir("/");
+        }
+    } else {
+        std::string path = config->getOption(OPT_NETWORK)->getString();
+        if (!filer->getDir(path)) {
+            messageBox->show("OOPS", filer->getError(), "OK");
+            show(MenuType::Home);
+        } else {
+            filer->clearHistory();
+        }
+    }
+}
+
 bool Main::isExiting() { return exit; }
 bool Main::isRunning() { return running; }
 void Main::setRunningStop() { running = false; }
-void Main::quit() { /* bez zmian */ }
+
+void Main::quit() {
+    config->getOption(OPT_LAST_PATH)->setString(filer->getPath());
+    config->save();
+    exit = true;
+    if (player->getMpv()->isStopped()) {
+        running = false;
+    } else {
+        player->stop();
+    }
+}
 
 Player *Main::getPlayer() { return player; }
 Filer *Main::getFiler() { return filer; }
