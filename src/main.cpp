@@ -9,67 +9,30 @@
 #include "scrapper.h"
 #include <stdio.h>
 
-#ifdef __SWITCH__
-static AppletHookCookie applet_hook_cookie;
-static void on_applet_hook(AppletHookType hook, void *arg) {
-    Main *main = (Main *) arg;
-    switch (hook) {
-        case AppletHookType_OnExitRequest:
-            main->quit();
-            break;
-        case AppletHookType_OnFocusState:
-            if (appletGetFocusState() == AppletFocusState_InFocus) {
-                if (main->getPlayer()->getMpv()->isPaused()) {
-                    main->getPlayer()->resume();
-                }
-            } else {
-                if (!main->getPlayer()->getMpv()->isPaused()) {
-                    main->getPlayer()->pause();
-                }
-            }
-            break;
-        default:
-            break;
+#ifdef __PS4__
+static void write_log(const char* text)
+{
+    FILE* f = fopen("/data/pplay.log", "a");
+    if (f) {
+        fprintf(f, "%s\n", text);
+        fclose(f);
     }
 }
-#elif __PS4__
-#include <orbis/Sysmodule.h>
-#include <orbis/libkernel.h>
-extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
-typedef void (*jbc_run_as_root_t)(void(*fn)(void* arg), void* arg, int cwd_mode);
-
-static void root_function(void* arg)
-{
-    printf("[pplay] Executing code as root!\n");
-}
-
 static void do_jailbreak(void)
 {
-    printf("[pplay] =============================================\n");
-    printf("[pplay] ADVANCED JB LOADER + jbc_run_as_root\n");
-    printf("[pplay] =============================================\n");
+    write_log("[pplay] do_jailbreak() START");
+    write_log("[pplay] Trying to load jb.prx...");
 
     int module_id = sceKernelLoadStartModule("/data/jb.prx", 0, NULL, 0, NULL, NULL);
     if (module_id > 0) {
-        printf("[pplay] ✅ jb.prx loaded (ID: %d)\n", module_id);
-
-        void *addr = NULL;
-        int ret = sceKernelDlsym(module_id, "jbc_run_as_root", &addr);
-
-        if (ret == 0 && addr != NULL) {
-            jbc_run_as_root_t run_as_root = (jbc_run_as_root_t)addr;
-            printf("[pplay] Found jbc_run_as_root - running as root...\n");
-            run_as_root(root_function, NULL, 0);
-            printf("[pplay] jbc_run_as_root finished.\n");
-        } else {
-            printf("[pplay] jbc_run_as_root not found (or dlsym failed)\n");
-        }
+        write_log("[pplay] jb.prx LOADED SUCCESSFULLY");
     } else {
-        printf("[pplay] Failed to load jb.prx (0x%X)\n", module_id);
+        write_log("[pplay] Failed to load jb.prx");
     }
+    write_log("[pplay] do_jailbreak() FINISHED");
 }
 #endif
 
@@ -189,11 +152,6 @@ void Main::show(MenuType type) {
         if (!filer->getDir(path)) {
             filer->getDir("/");
         }
-#ifdef __SWITCH__
-        } else if (type == MenuType::Usb) {
-            usbInit();
-            filer->getDir(config->getOption(OPT_UMS_DEVICE)->getString());
-#endif
     } else {
         std::string path = config->getOption(OPT_NETWORK)->getString();
         if (!filer->getDir(path)) {
@@ -237,6 +195,13 @@ pplay::Scrapper *Main::getScrapper() { return scrapper; }
 
 int main() {
 #ifdef __PS4__
+    // Najwcześniejsze logowanie
+    FILE* f = fopen("/data/pplay.log", "w");
+    if (f) {
+        fprintf(f, "[pplay] main() started\n");
+        fclose(f);
+    }
+
     do_jailbreak();
 #endif
 
