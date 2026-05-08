@@ -39,13 +39,6 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
-typedef void (*jbc_run_as_root_t)(void(*fn)(void* arg), void* arg, int cwd_mode);
-
-static void root_function(void* arg)
-{
-    write_log("[pplay] >>> CODE EXECUTING AS ROOT <<<");
-}
-
 static void write_log(const char* text)
 {
     FILE* f = fopen("/data/pplay.log", "a");
@@ -53,6 +46,13 @@ static void write_log(const char* text)
         fprintf(f, "%s\n", text);
         fclose(f);
     }
+}
+
+typedef void (*jbc_run_as_root_t)(void(*fn)(void* arg), void* arg, int cwd_mode);
+
+static void root_function(void* arg)
+{
+    write_log("[pplay] >>> CODE EXECUTING AS ROOT <<<");
 }
 
 static void do_jailbreak(void)
@@ -67,7 +67,7 @@ static void do_jailbreak(void)
         int ret = sceKernelDlsym(module_id, "jbc_run_as_root", &addr);
 
         if (ret == 0 && addr != NULL) {
-            write_log("[pplay] Found jbc_run_as_root - calling it...");
+            write_log("[pplay] Found jbc_run_as_root - calling...");
             jbc_run_as_root_t run_as_root = (jbc_run_as_root_t)addr;
             run_as_root(root_function, NULL, 0);
             write_log("[pplay] jbc_run_as_root finished");
@@ -84,7 +84,6 @@ static void do_jailbreak(void)
 }
 #endif
 
-// Reszta kodu pozostaje taka sama jak wcześniej (Main class, konstruktor itd.)
 using namespace c2d;
 using namespace c2d::config;
 using namespace pplay;
