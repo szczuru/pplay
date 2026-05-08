@@ -28,8 +28,8 @@ std::vector<Io::File> Io::getDirList(const DeviceType &type, const std::vector<s
                 Io::File f;
                 f.name = entry->d_name;
                 f.path = fullpath;
-                f.isDir = S_ISDIR(st.st_mode);   // poprawka
                 f.size = st.st_size;
+                f.isDir = S_ISDIR(st.st_mode);     // tu był błąd
                 files.push_back(f);
             }
         }
