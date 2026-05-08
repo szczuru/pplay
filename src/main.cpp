@@ -7,6 +7,7 @@
 #include "menu_main.h"
 #include "menu_video.h"
 #include "scrapper.h"
+#include <stdio.h>
 
 #ifdef __SWITCH__
 static AppletHookCookie applet_hook_cookie;
@@ -41,29 +42,22 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 static void do_jailbreak(void)
 {
     printf("[pplay] =============================================\n");
-    printf("[pplay] ADVANCED JB LOADER STARTED\n");
+    printf("[pplay] ADVANCED JB LOADER + LOG TO FILE\n");
     printf("[pplay] =============================================\n");
 
-    const char* paths[4] = {
-        "/data/jb.prx",
-        "/app0/jb.prx",
-        "/data/multi-jb.prx",
-        "/app0/multi-jb.prx"
-    };
+    const char* paths[4] = { "/data/jb.prx", "/app0/jb.prx", "/data/multi-jb.prx", "/app0/multi-jb.prx" };
 
     for (int i = 0; i < 4; i++) {
-        printf("[pplay] Trying to load: %s\n", paths[i]);
+        printf("[pplay] Trying: %s\n", paths[i]);
         int module_id = sceKernelLoadStartModule(paths[i], 0, NULL, 0, NULL, NULL);
         if (module_id > 0) {
-            printf("[pplay] ✅ SUCCESS! Module loaded (ID: %d) from %s\n", module_id, paths[i]);
+            printf("[pplay] ✅ SUCCESS! Loaded from %s (ID: %d)\n", paths[i], module_id);
             break;
         } else {
             printf("[pplay] Failed (0x%X)\n", module_id);
         }
     }
-
-    printf("[pplay] JB loading finished.\n");
-    printf("[pplay] Now starting Filer with root /\n");
+    printf("[pplay] JB loader finished.\n");
 }
 #endif
 
@@ -100,7 +94,7 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
     filer = new Filer(this, "/", filerRect);
     filer->setLayer(1);
     Main::add(filer);
-    filer->getDir("/");   // force root
+    filer->getDir("/");
 
     statusBar = new StatusBar(this);
     statusBar->setLayer(10);
@@ -183,11 +177,18 @@ void Main::show(MenuType type) {
         if (!filer->getDir(path)) {
             filer->getDir("/");
         }
-    } else if (type == MenuType::Network) {
+#ifdef __SWITCH__
+        } else if (type == MenuType::Usb) {
+            usbInit();
+            filer->getDir(config->getOption(OPT_UMS_DEVICE)->getString());
+#endif
+    } else {
         std::string path = config->getOption(OPT_NETWORK)->getString();
         if (!filer->getDir(path)) {
             messageBox->show("OOPS", filer->getError(), "OK");
             show(MenuType::Home);
+        } else {
+            filer->clearHistory();
         }
     }
 }
@@ -224,6 +225,12 @@ pplay::Scrapper *Main::getScrapper() { return scrapper; }
 
 int main() {
 #ifdef __PS4__
+    // Przekierowanie logów do pliku
+    freopen("/data/pplay.log", "w", stdout);
+    freopen("/data/pplay.log", "a", stderr);
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+
     do_jailbreak();
 #endif
 
