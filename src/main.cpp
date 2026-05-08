@@ -37,21 +37,30 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
+// =============================================
+// NAJMOCNIEJSZA WERSJA - na samym początku
+// =============================================
 static void do_jailbreak(void)
 {
     printf("[pplay] =============================================\n");
-    printf("[pplay] Starting SAFE minimal jailbreak...\n");
+    printf("[pplay] EARLY JAILBREAK - Itemzflow / PS4 Explorer style\n");
     printf("[pplay] =============================================\n");
 
-    // Bardzo ostrożna wersja - tylko to co jest bezpieczne
-    printf("[pplay] GoldHEN mode - relying on system privileges...\n");
+    asm volatile("mov $1, %%rdi\n\t"
+                 "xor %%rsi, %%rsi\n\t"
+                 "syscall" ::: "rdi","rsi","rax","memory");
 
-    // Lekkie próby bez ryzyka crasha
-    asm volatile("nop" ::: "memory");
-    asm volatile("nop" ::: "memory");
+    asm volatile("mov $0x4B, %%rax\n\t"
+                 "syscall" ::: "rax","memory");
 
-    printf("[pplay] Safe jailbreak finished.\n");
-    printf("[pplay] If you have GoldHEN enabled, full FS should be available.\n");
+    asm volatile("mov $0x1A, %%rax\n\t"
+                 "mov $1, %%rdi\n\t"
+                 "syscall" ::: "rax","rdi","memory");
+
+    asm volatile("mov $0x4C, %%rax\n\t"
+                 "syscall" ::: "rax","memory");
+
+    printf("[pplay] Early jailbreak finished.\n");
 }
 #endif
 
@@ -84,11 +93,12 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
 
     Main::getIo()->create(Main::getIo()->getDataPath() + "cache");
 
+    // Force full root
     FloatRect filerRect = {0, 0, Main::getSize().x, Main::getSize().y};
     filer = new Filer(this, "/", filerRect);
     filer->setLayer(1);
     Main::add(filer);
-    filer->getDir("/");
+    filer->getDir("/");        // bardzo ważne - force root
 
     statusBar = new StatusBar(this);
     statusBar->setLayer(10);
@@ -172,9 +182,7 @@ void Main::show(MenuType type) {
 #endif
         std::string path = config->getOption(OPT_HOME_PATH)->getString();
         if (!filer->getDir(path)) {
-            if (filer->getDir("/")) {
-                filer->clearHistory();
-            }
+            filer->getDir("/");
         }
 #ifdef __SWITCH__
         } else if (type == MenuType::Usb) {
@@ -227,7 +235,7 @@ pplay::Scrapper *Main::getScrapper() { return scrapper; }
 
 int main() {
 #ifdef __PS4__
-    do_jailbreak();
+    do_jailbreak();   // jak najwcześniej
 #endif
 
     Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
