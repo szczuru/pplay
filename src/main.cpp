@@ -44,15 +44,13 @@ static void do_jailbreak(void)
     printf("[pplay] Trying to load jb.prx (Itemzflow method)...\n");
     printf("[pplay] =============================================\n");
 
-    // Ładujemy PRX z /data/
     int module_id = sceKernelLoadStartModule("/data/jb.prx", 0, NULL, 0, NULL, NULL);
 
     if (module_id > 0) {
-        printf("[pplay] ✅ SUCCESS! jb.prx loaded (ID: %d)\n", module_id);
-        printf("[pplay] Full root access should now be active.\n");
+        printf("[pplay] ✅ jb.prx loaded successfully (ID: %d)\n", module_id);
     } else {
         printf("[pplay] ❌ Failed to load jb.prx (error: 0x%X)\n", module_id);
-        printf("[pplay] Make sure jb.prx is in /data/ on PS4\n");
+        printf("[pplay] Make sure jb.prx is placed in /data/jb.prx on PS4\n");
     }
 }
 #endif
@@ -100,7 +98,6 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
     player->setLayer(2);
     Main::add(player);
 
-    // ... reszta menu bez zmian (skróciłem dla czytelności)
     std::vector<MenuItem> items;
     items.emplace_back("Home", "home.png", MenuItem::Position::Top);
 #ifdef __SWITCH__
@@ -139,16 +136,77 @@ Main::Main(const c2d::Vector2f &size) : C2DRenderer(size) {
     scrapper = new Scrapper(this);
 }
 
-// Reszta funkcji bez zmian (getPlayer, getFiler itd.)
-Main::~Main() { delete (scrapper); delete (config); delete (timer); delete (font); }
+Main::~Main() {
+    delete (scrapper);
+    delete (config);
+    delete (timer);
+    delete (font);
+}
 
-bool Main::onInput(...) { /* bez zmian */ }
-void Main::onUpdate() { C2DRenderer::onUpdate(); }
-void Main::show(MenuType type) { /* bez zmian */ }
+bool Main::onInput(c2d::Input::Player *players) {
+    if (messageBox->isVisible()) return false;
+    unsigned int keys = players[0].keys;
+    if (keys & EV_QUIT) {
+        if (player->isFullscreen()) {
+            player->setFullscreen(false);
+            filer->setVisibility(Visibility::Visible, true);
+        } else {
+            quit();
+        }
+    }
+    return Renderer::onInput(players);
+}
+
+void Main::onUpdate() {
+    C2DRenderer::onUpdate();
+}
+
+void Main::show(MenuType type) {
+    if (player->getMpv()->isStopped() && player->isFullscreen()) {
+        player->setFullscreen(false);
+    }
+    filer->setVisibility(Visibility::Visible, true);
+    if (type == MenuType::Home) {
+#ifdef __SWITCH__
+        usbHsFsExit();
+#endif
+        std::string path = config->getOption(OPT_HOME_PATH)->getString();
+        if (!filer->getDir(path)) {
+            filer->getDir("/");
+        }
+#ifdef __SWITCH__
+        } else if (type == MenuType::Usb) {
+            usbInit();
+            filer->getDir(config->getOption(OPT_UMS_DEVICE)->getString());
+#endif
+    } else {
+#ifdef __SWITCH__
+        usbHsFsExit();
+#endif
+        std::string path = config->getOption(OPT_NETWORK)->getString();
+        if (!filer->getDir(path)) {
+            messageBox->show("OOPS", filer->getError(), "OK");
+            show(MenuType::Home);
+        } else {
+            filer->clearHistory();
+        }
+    }
+}
+
 bool Main::isExiting() { return exit; }
 bool Main::isRunning() { return running; }
 void Main::setRunningStop() { running = false; }
-void Main::quit() { /* bez zmian */ }
+
+void Main::quit() {
+    config->getOption(OPT_LAST_PATH)->setString(filer->getPath());
+    config->save();
+    exit = true;
+    if (player->getMpv()->isStopped()) {
+        running = false;
+    } else {
+        player->stop();
+    }
+}
 
 Player *Main::getPlayer() { return player; }
 Filer *Main::getFiler() { return filer; }
@@ -171,7 +229,6 @@ int main() {
 #endif
 
     Vector2f size = {C2D_SCREEN_WIDTH, C2D_SCREEN_HEIGHT};
-    // ... reszta main() bez zmian
 #ifdef __SWITCH__
 #ifdef NDEBUG
     socketInitializeDefault();
@@ -186,7 +243,12 @@ int main() {
 
     Main *main = new Main(size);
 
-    // ... reszta pętli bez zmian
+#ifdef __SWITCH__
+    appletLockExit();
+    appletHook(&applet_hook_cookie, on_applet_hook, main);
+    appletSetFocusHandlingMode(AppletFocusHandlingMode_NoSuspend);
+#endif
+
     while (main->isRunning()) {
         main->flip();
     }
@@ -194,7 +256,12 @@ int main() {
     delete (main);
 
 #ifdef __SWITCH__
-    // ... 
+    usbHsFsExit();
+    appletUnhook(&applet_hook_cookie);
+    appletUnlockExit();
+#ifdef NDEBUG
+    socketExit();
+#endif
 #elif __PS4__
     sceSystemServiceLoadExec((char *) "exit", nullptr);
     while (true) {}
