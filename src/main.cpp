@@ -39,38 +39,31 @@ extern "C" int sceSystemServiceLoadExec(const char *path, const char *args[]);
 #endif
 
 #ifdef __PS4__
-typedef void (*jbc_run_as_root_t)(void(*fn)(void* arg), void* arg, int cwd_mode);
-
-static void root_function(void* arg)
+static void write_log(const char* text)
 {
-    // Kod uruchomiony z uprawnieniami root
-    printf("[pplay] CODE RUNNING AS ROOT!\n");
+    FILE* f = fopen("/data/pplay.log", "a");
+    if (f) {
+        fprintf(f, "%s\n", text);
+        fclose(f);
+    }
 }
 
 static void do_jailbreak(void)
 {
-    printf("[pplay] =============================================\n");
-    printf("[pplay] Trying jb.prx + jbc_run_as_root\n");
-    printf("[pplay] =============================================\n");
+    write_log("[pplay] do_jailbreak() START");
 
+    write_log("[pplay] Trying to load /data/jb.prx...");
     int module_id = sceKernelLoadStartModule("/data/jb.prx", 0, NULL, 0, NULL, NULL);
+
     if (module_id > 0) {
-        printf("[pplay] jb.prx loaded (ID: %d)\n", module_id);
-
-        void* addr = NULL;
-        int ret = sceKernelDlsym(module_id, "jbc_run_as_root", &addr);
-
-        if (ret == 0 && addr != NULL) {
-            jbc_run_as_root_t run_as_root = (jbc_run_as_root_t)addr;
-            printf("[pplay] Found jbc_run_as_root - executing as root...\n");
-            run_as_root(root_function, NULL, 0);
-            printf("[pplay] jbc_run_as_root finished.\n");
-        } else {
-            printf("[pplay] jbc_run_as_root not found (dlsym failed)\n");
-        }
+        write_log("[pplay] jb.prx LOADED SUCCESSFULLY");
     } else {
-        printf("[pplay] Failed to load jb.prx (0x%X)\n", module_id);
+        char buf[64];
+        snprintf(buf, sizeof(buf), "[pplay] LOAD FAILED (0x%X)", module_id);
+        write_log(buf);
     }
+
+    write_log("[pplay] do_jailbreak() FINISHED");
 }
 #endif
 
@@ -233,7 +226,6 @@ pplay::Scrapper *Main::getScrapper() { return scrapper; }
 
 int main() {
 #ifdef __PS4__
-    // Log na samym początku
     FILE* f = fopen("/data/pplay.log", "w");
     if (f) {
         fprintf(f, "[pplay] main() started\n");
